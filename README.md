@@ -1,0 +1,35 @@
+#** RETO 4 - TORNEO ESCOLAR ** <br>
+##** Integrantes ** <br>
+* Exneider Alfonso Nava Archila <br>
+* Valeria Lizcano <br>
+* Hamilton Quiroga <br>
+* Sofia <br>
+* Jesús <br>
+##** Identificacion del problema ** <br>
+La organización de un torneo escolar requiere un programa en consola para registrar los resultados de sus equipos y auditar la asistencia del público a lo largo de 5 fechas fijas (0 a 500 espectadores), resolviendo la dificultad central de calcular los puntajes y determinar al líder de la tabla de posiciones de manera uniforme sin consultar el tipo concreto de cada equipo mediante condicionales. El sistema debe gestionar dos categorías de puntuación distintas (Formativa: 2 pts por victoria y 1 por empate; Competitiva: 3 pts por victoria y 1 por empate; derrotas otorgan 0 pts), aplicando reglas estrictas de negocio como un límite máximo de 20 partidos por equipo, resultados válidos exclusivamente entre 'G', 'E' o 'P', identificadores normalizados y sin duplicados, selección del primer equipo registrado en caso de empate de puntos y reporte de "Sin datos" ante listas vacías, dejando fuera del alcance el emparejamiento de calendarios, bases de datos externas e interfaces gráficas.
+##** Justificación de Decisiones de Diseño POO ** <br>
+El diseño aplica una relación de herencia («es un») mediante la clase base abstracta \`Equipo\` y sus subclases \`EquipoFormativo\` y \`EquipoCompetitivo\`, centralizando atributos de estado y reglas comunes (identificador normalizado, nombre, contadores privados y el límite de 20 partidos) para evitar duplicación, mientras delega el cálculo de puntaje a cada variante mediante sobrescritura (\`@Override\`) de \`calcularPuntos()\`. Esta estructura habilita el polimorfismo dinámico en tiempo de ejecución, permitiendo que la clase \`Torneo\` gestione colecciones homogéneas de tipo \`Equipo\` y determine al líder sin incurrir en verificaciones condicionales de tipo (\`instanceof\` o \`switch\`). Asimismo, se incorpora la interfaz \`FormateadorFicha\` bajo una relación de uso («usa») implementada por \`FormateadorConsola\`, desacoplando completamente el modelo de dominio de la representación visual de los reportes para favorecer la extensibilidad y mantener la cohesión de las clases.
+##** Justificación de las Estructuras de Datos ** <br>
+Para la gestión de asistencia se seleccionó un arreglo primitivo de tamaño fijo (\`int[]\` de 5 posiciones), dado que la cantidad de fechas a auditar es estrictamente constante y conocida de antemano (días 1 a 5 mapeados a índices 0 a 4), garantizando orden cronológico y eficiencia de memoria sin la sobrecarga de una colección redimensionable; en contraste, para el registro de participantes se optó por la interfaz \`List
+##** Diagrama de Clases UML ** <br>
+<img width="1219" height="752" alt="WhatsApp Image 2026-10-24 at 1 13 24 PM" src="https://github.com/user-attachments/assets/2a51f9a6-7123-4f61-a747-6150abf9b28a" />
+<br>
+##** Tabla de Casos de Prueba ** <br>
+| Caso de Prueba | Entradas | Resultado Esperado | Resultado Obtenido | ¿Coincide? |
+| :--- | :--- | :--- | :--- | :---: |
+| **Escenario base:** Registro y cálculo polimórfico de puntos | F-01 (Formativo) y C-01 (Competitivo), ambos con resultados "G", "E", "P" | F-01: 3 PJ, 3 Pts (1G, 1E, 1P)<br>C-01: 3 PJ, 4 Pts (1G, 1E, 1P) | F-01: 3 PJ, 3 Pts<br>C-01: 3 PJ, 4 Pts | Sí |
+| **Escenario base:** Determinación de líder del torneo | F-01 (3 pts) y C-01 (4 pts) | Líder: C-01 | Líder: C-01 | Sí |
+| **Escenario base:** Rechazo de resultado inválido | Registrar resultado "X" en equipo F-01 | Retorna `false`; conserva 3 PJ y 3 Pts | Retorna `false`; F-01 conserva 3 PJ y 3 Pts | Sí |
+| **Escenario base:** Métricas de asistencia (arreglo fijo) | Asistencias: (fechas 1 a 5) | Total: 150<br>Promedio: 30.0<br>Máximo: 40<br>Fecha del máximo: 3 | Total: 150<br>Promedio: 30.0<br>Máximo: 40<br>Fecha del máximo: 3 | Sí |
+| **Escenario base:** Evidencias genéricas (`Evidencia<T>`) | `Evidencia<Integer>` con total de equipos (2)<br>`Evidencia<String>` con conclusión | Cantidad de equipos: 2<br>Conclusión: texto descriptivo | Cantidad de equipos: 2<br>Conclusión: texto descriptivo | Sí |
+| **Límite exacto:** Límite máximo de 20 partidos | Registrar 20 derrotas ("P") seguidas y solicitar partido 21 ("P") en C-01 | Partido 20 aceptado (20 PJ, 0 Pts); solicitud 21 rechazada (`false`, conserva 20 PJ y 0 Pts) | Partido 20 aceptado; solicitud 21 rechazada (`false`, conserva 20 PJ y 0 Pts) | Sí |
+| **Dato inválido:** Resultado nulo o en blanco | Registrar `null` y `"   "` como resultado | Ambas solicitudes retornan `false`; contadores no cambian | Retorna `false`; contadores inalterados | Sí |
+| **Normalización:** Tolerancia a minúsculas y espacios | Registrar resultado `" g "` en equipo con ID `" f-01 "` | Búsqueda exitosa; registra victoria ("G") aumentando partidos y puntos | Retorna `true`; victoria registrada con éxito | Sí |
+| **Dato inválido:** ID duplicado tras normalizar | Registrar nuevo equipo con ID `" f-01 "` existiendo `"F-01"` | Solicitud rechazada (`false`); no se agrega a la lista | Retorna `false`; no se duplica en la lista | Sí |
+| **Desempate:** Empate exacto en puntos | Equipo A (3 pts, registrado 1°) y Equipo B (3 pts, registrado 2°) | Líder: Equipo A (primer equipo registrado) | Líder: Equipo A | Sí |
+| **Lista vacía:** Consulta de líder y total sin registros | Torneo nuevo sin equipos registrados | Total equipos: 0; Líder: "Sin datos" (sin excepciones) | Total equipos: 0; Líder: "Sin datos" | Sí |
+| **Búsqueda fallida:** ID inexistente | Buscar o registrar resultado a ID `"Z-99"` | Retorna `null` o `false` ("No encontrado"); no modifica estado | Retorna `null` / `false`; no modifica estado | Sí |
+| **Rango inválido:** Asistencia fuera de límites de fecha | Registrar asistencia en fecha 0 o fecha 6 | Retorna `false`; arreglo de 5 fechas inalterado | Retorna `false`; arreglo inalterado | Sí |
+| **Dato inválido:** Espectadores fuera de rango permitido | Registrar -5 o 550 espectadores en fecha válida | Retorna `false`; no se modifica el valor de la fecha | Retorna `false`; valor inalterado | Sí |
+##** Explicación del Breakpoint de Depuración (Debug) ** <br>
+Para comprobar en tiempo de ejecución la regla de negocio que limita a un equipo a un máximo de 20 partidos, se colocó un punto de interrupción (\*breakpoint\*) en la clase \`Equipo.java\`, sobre la condición \`if (totalPartidos() &gt;= 20) { return false; }\` dentro del método \`registrarResultado\`. Al simular la solicitud del partido número 21 sobre un equipo que ya acumulaba 20 derrotas, se inspeccionó el panel de variables de IntelliJ IDEA antes de evaluar la línea, confirmando en el estado del objeto que \`ganados = 0\`, \`empatados = 0\`, \`perdidos = 20\` y \`totalPartidos() = 20\`; inmediatamente después de avanzar la ejecución con \*Step Over\* (F8), se observó que la condición evaluó a \`true\`, desviando el flujo directo al \`return false\` sin modificar ninguno de los contadores internos del equipo, demostrando así la protección y consistencia del estado frente a operaciones inválidas.
